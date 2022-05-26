@@ -23,7 +23,7 @@ public class TS_KQBF extends AbstractTS<Integer> {
 	private final Integer fake = new Integer(-1);
 
 	/**
-	 * Constructor for the TS_QBF class. An inverse QBF objective function is
+	 * Constructor for the TS_KQBF class. An inverse KQBF objective function is
 	 * passed as argument for the superclass constructor.
 	 * 
 	 * @param tenure
@@ -120,7 +120,7 @@ public class TS_KQBF extends AbstractTS<Integer> {
 	 * composed by the neighborhood moves Insertion, Removal and 2-Exchange.
 	 */
 	@Override
-	public Solution<Integer> neighborhoodMove() {
+	public Solution<Integer> neighborhoodMoveBestImprove() {
 
 		Double minDeltaCost;
 		Integer bestCandIn = null, bestCandOut = null;
@@ -184,6 +184,84 @@ public class TS_KQBF extends AbstractTS<Integer> {
 		return null;
 	}
 
+	public Solution<Integer> neighborhoodMoveFirstImprove() {
+
+		Double minDeltaCost;
+		Integer bestCandIn = null, bestCandOut = null;
+		boolean foundNewLocalOptimum = false;
+
+		minDeltaCost = Double.POSITIVE_INFINITY;
+		updateCL();
+
+		// Evaluate insertions
+		if (!foundNewLocalOptimum) {
+			for (Integer candIn : CL) {
+				Double deltaCost = ObjFunction.evaluateInsertionCost(candIn, sol);
+				if (!TL.contains(candIn) || sol.cost+deltaCost < bestSol.cost) {
+					if (deltaCost < minDeltaCost) {
+						minDeltaCost = deltaCost;
+						bestCandIn = candIn;
+						bestCandOut = null;
+						foundNewLocalOptimum = true;
+					}
+				}
+			}
+		}
+		
+		if (!foundNewLocalOptimum) {
+			// Evaluate removals
+			for (Integer candOut : sol) {
+				Double deltaCost = ObjFunction.evaluateRemovalCost(candOut, sol);
+				if (!TL.contains(candOut) || sol.cost+deltaCost < bestSol.cost) {
+					if (deltaCost < minDeltaCost) {
+						minDeltaCost = deltaCost;
+						bestCandIn = null;
+						bestCandOut = candOut;
+						foundNewLocalOptimum = true;
+					}
+				}
+			}
+		}
+		
+		// Evaluate exchanges
+		if (!foundNewLocalOptimum) {
+			for (Integer candIn : CL) {
+				for (Integer candOut : sol) {
+					Double deltaCost = ObjFunction.evaluateExchangeCost(candIn, candOut, sol);
+					if ((!TL.contains(candIn) && !TL.contains(candOut)) || sol.cost+deltaCost < bestSol.cost) {
+						if (deltaCost < minDeltaCost) {
+							minDeltaCost = deltaCost;
+							bestCandIn = candIn;
+							bestCandOut = candOut;
+							foundNewLocalOptimum = true;
+						}
+					}
+				}
+			}
+		}
+
+		// Implement the best non-tabu move
+		TL.poll();
+		if (bestCandOut != null) {
+			sol.remove(bestCandOut);
+			CL.add(bestCandOut);
+			TL.add(bestCandOut);
+		} else {
+			TL.add(fake);
+		}
+		TL.poll();
+		if (bestCandIn != null) {
+			sol.add(bestCandIn);
+			CL.remove(bestCandIn);
+			TL.add(bestCandIn);
+		} else {
+			TL.add(fake);
+		}
+		ObjFunction.evaluate(sol);
+		
+		return null;
+	}
+	
 	/**
 	 * A main method used for testing the TS metaheuristic.
 	 * 
