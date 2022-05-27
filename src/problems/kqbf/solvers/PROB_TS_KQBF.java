@@ -3,11 +3,14 @@ package problems.kqbf.solvers;
 import java.io.IOException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+import java.util.Random;
+import java.util.Set;
 
 import metaheuristics.tabusearch.AbstractTS;
 import problems.kqbf.KQBF_Inverse;
 import solutions.Solution;
-
 
 
 /**
@@ -18,7 +21,7 @@ import solutions.Solution;
  * 
  * @author ccavellucci, fusberti
  */
-public class TS_KQBF extends AbstractTS<Integer> {
+public class PROB_TS_KQBF extends AbstractTS<Integer> {
 	
 	private final Integer fake = new Integer(-1);
 
@@ -36,7 +39,7 @@ public class TS_KQBF extends AbstractTS<Integer> {
 	 * @throws IOException
 	 *             necessary for I/O operations.
 	 */
-	public TS_KQBF(Integer tenure, Integer iterations, String filename) throws IOException {
+	public PROB_TS_KQBF(Integer tenure, Integer iterations, String filename) throws IOException {
 		super(new KQBF_Inverse(filename), tenure, iterations);
 	}
 
@@ -113,77 +116,12 @@ public class TS_KQBF extends AbstractTS<Integer> {
 		return sol;
 	}
 
-	/**
-	 * {@inheritDoc}
-	 * 
-	 * The local search operator developed for the QBF objective function is
-	 * composed by the neighborhood moves Insertion, Removal and 2-Exchange.
-	 */
 	@Override
-	public Solution<Integer> neighborhoodMoveBestImprove() {
-
-		Double minDeltaCost;
-		Integer bestCandIn = null, bestCandOut = null;
-
-		minDeltaCost = Double.POSITIVE_INFINITY;
-		updateCL();
-		// Evaluate insertions
-		for (Integer candIn : CL) {
-			Double deltaCost = ObjFunction.evaluateInsertionCost(candIn, sol);
-			if (!TL.contains(candIn) || sol.cost+deltaCost < bestSol.cost) {
-				if (deltaCost < minDeltaCost) {
-					minDeltaCost = deltaCost;
-					bestCandIn = candIn;
-					bestCandOut = null;
-				}
-			}
-		}
-		// Evaluate removals
-		for (Integer candOut : sol) {
-			Double deltaCost = ObjFunction.evaluateRemovalCost(candOut, sol);
-			if (!TL.contains(candOut) || sol.cost+deltaCost < bestSol.cost) {
-				if (deltaCost < minDeltaCost) {
-					minDeltaCost = deltaCost;
-					bestCandIn = null;
-					bestCandOut = candOut;
-				}
-			}
-		}
-		// Evaluate exchanges
-		for (Integer candIn : CL) {
-			for (Integer candOut : sol) {
-				Double deltaCost = ObjFunction.evaluateExchangeCost(candIn, candOut, sol);
-				if ((!TL.contains(candIn) && !TL.contains(candOut)) || sol.cost+deltaCost < bestSol.cost) {
-					if (deltaCost < minDeltaCost) {
-						minDeltaCost = deltaCost;
-						bestCandIn = candIn;
-						bestCandOut = candOut;
-					}
-				}
-			}
-		}
-		// Implement the best non-tabu move
-		TL.poll();
-		if (bestCandOut != null) {
-			sol.remove(bestCandOut);
-			CL.add(bestCandOut);
-			TL.add(bestCandOut);
-		} else {
-			TL.add(fake);
-		}
-		TL.poll();
-		if (bestCandIn != null) {
-			sol.add(bestCandIn);
-			CL.remove(bestCandIn);
-			TL.add(bestCandIn);
-		} else {
-			TL.add(fake);
-		}
-		ObjFunction.evaluate(sol);
-		
+	public Solution<Integer> neighborhoodMoveBestImprove() {	
 		return null;
 	}
 
+	@Override
 	public Solution<Integer> neighborhoodMoveFirstImprove() {
 
 		Double minDeltaCost;
@@ -193,9 +131,12 @@ public class TS_KQBF extends AbstractTS<Integer> {
 		minDeltaCost = Double.POSITIVE_INFINITY;
 		updateCL();
 
+		Collections.shuffle(CL);
+		List<Integer> randomCL = CL.subList(0, CL.size()/2);
+
 		// Evaluate insertions
 		if (!foundNewLocalOptimum) {
-			for (Integer candIn : CL) {
+			for (Integer candIn : randomCL) {
 				Double deltaCost = ObjFunction.evaluateInsertionCost(candIn, sol);
 				if (!TL.contains(candIn) || sol.cost+deltaCost < bestSol.cost) {
 					if (deltaCost < minDeltaCost) {
@@ -225,7 +166,7 @@ public class TS_KQBF extends AbstractTS<Integer> {
 		
 		// Evaluate exchanges
 		if (!foundNewLocalOptimum) {
-			for (Integer candIn : CL) {
+			for (Integer candIn : randomCL) {
 				for (Integer candOut : sol) {
 					Double deltaCost = ObjFunction.evaluateExchangeCost(candIn, candOut, sol);
 					if ((!TL.contains(candIn) && !TL.contains(candOut)) || sol.cost+deltaCost < bestSol.cost) {
@@ -269,7 +210,7 @@ public class TS_KQBF extends AbstractTS<Integer> {
 	public static void main(String[] args) throws IOException {
 
 		long startTime = System.currentTimeMillis();
-		TS_KQBF tabusearch = new TS_KQBF(100, 1000, "instances/kqbf/kqbf400");
+		PROB_TS_KQBF tabusearch = new PROB_TS_KQBF(20, 1000, "instances/kqbf/kqbf400");
 		Solution<Integer> bestSol = tabusearch.solve();
 		System.out.println("maxVal = " + bestSol);
 		long endTime   = System.currentTimeMillis();
