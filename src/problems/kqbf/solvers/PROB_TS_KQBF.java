@@ -5,8 +5,6 @@ import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
-import java.util.Random;
-import java.util.Set;
 
 import metaheuristics.tabusearch.AbstractTS;
 import problems.kqbf.KQBF_Inverse;
@@ -210,7 +208,7 @@ public class PROB_TS_KQBF extends AbstractTS<Integer> {
 	public static void main(String[] args) throws IOException {
 
 		long startTime = System.currentTimeMillis();
-		PROB_TS_KQBF tabusearch = new PROB_TS_KQBF(20, 1000, "instances/kqbf/kqbf400");
+		PROB_TS_KQBF tabusearch = new PROB_TS_KQBF(20, 1000, "instances/kqbf/kqbf00");
 		Solution<Integer> bestSol = tabusearch.solve();
 		System.out.println("maxVal = " + bestSol);
 		long endTime   = System.currentTimeMillis();
